@@ -1,7 +1,7 @@
 import re
-import os        # [추가]
-import base64    # [추가]
-from urllib.parse import quote   # [추가]
+import os
+import base64
+from urllib.parse import quote
 from datetime import datetime, timedelta
 
 import requests
@@ -142,7 +142,7 @@ SAFETY_STEPS = [
 ]
 
 
-# [추가] 국내 지진 중대 피해 사례 TOP 5 (피해 큰 순서)
+# 국내 지진 중대 피해 사례 TOP 5 (피해 큰 순서)
 def commons_img(filename):
     return f"https://commons.wikimedia.org/wiki/Special:FilePath/{quote(filename)}?width=800"
 
@@ -158,27 +158,44 @@ MAJOR_CASES = [
      "desc": "한옥 기와 낙하·담장 균열 다수, 불국사·첨성대 등 문화재 피해",
      "image": commons_img("2016 경주 지진 석가탑 CCTV.png"),
      "credit": "사진: 지진 당시 불국사 석가탑 CCTV (Wikimedia Commons)"},
+    # [변경] 3~5위 실제 피해 사진 추가
     {"rank": 3, "name": "2018 포항 여진", "date": "2018년 2월 11일", "intensity": "진도 Ⅴ",
      "human": "부상 43명", "property": "시설피해 신고 1,438건",
      "desc": "포항역 등 354곳 시설 피해, 학교 47곳 벽체 균열·천장 탈락",
-     "image": "", "credit": ""},
+     "image": "https://www.safetimes.co.kr/news/photo/201802/63158_33554_1553.jpg",
+     "credit": "사진: 장성동 건물 외벽 파손 (연합뉴스)"},
     {"rank": 4, "name": "1978 홍성 지진", "date": "1978년 10월 7일", "intensity": "진도 Ⅴ",
      "human": "부상 2명", "property": "건물 파손 118동 · 약 2억 원 (당시)",
      "desc": "건물 1,000여 곳 균열, 홍주읍성 성벽 90m 붕괴",
-     "image": "", "credit": ""},
+     "image": "https://cdn.hsnews.co.kr/news/photo/202101/103705_56869_3450.gif",
+     "credit": "사진: 무너진 홍주읍성 동쪽 성벽 (홍성문화원 제공)"},
     {"rank": 5, "name": "2024 부안 지진", "date": "2024년 6월 12일", "intensity": "진도 Ⅴ",
      "human": "인명피해 없음", "property": "시설피해 580여 건 (주택 404건)",
      "desc": "주택 벽 균열·창문 파손, 내소사·개암사 등 국가유산 6건 피해",
-     "image": "", "credit": ""},
+     "image": "https://img.khan.co.kr/news/2024/06/12/news-p.v1.20240612.4d23d5b756f04e148e974110431f174c_P1.jpg",
+     "credit": "사진: 장식이 떨어진 개암사 불상 (국가유산청 제공)"},
 ]
 
 
+# [변경] 사진을 서버에서 직접 받아와 넣음 (외부 사이트 사진 차단 방지, 하루 캐시)
+@st.cache_data(ttl=24 * 3600)
+def fetch_img_data(url):
+    try:
+        r = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0 (EarthquakeDashboard)"})
+        ctype = r.headers.get("Content-Type", "").split(";")[0].strip()
+        if r.status_code == 200 and ctype.startswith("image"):
+            return f"data:{ctype};base64,{base64.b64encode(r.content).decode()}"
+    except Exception:
+        pass
+    return url
+
+
 def img_src(path):
-    """인터넷 주소는 그대로, 내 컴퓨터 파일 경로는 화면에 보이도록 변환"""
+    """인터넷 주소는 받아와서 넣고, 내 컴퓨터 파일 경로는 화면에 보이도록 변환"""
     if not path:
         return ""
     if path.startswith("http"):
-        return path
+        return fetch_img_data(path)
     if os.path.exists(path):
         ext = os.path.splitext(path)[1].lower().strip(".") or "jpg"
         with open(path, "rb") as f:
@@ -358,20 +375,24 @@ div[data-baseweb="select"] * { font-size: 19px !important; }
 
 [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p { font-size: 17px !important; }
 
-/* [추가] 국내 지진 중대 피해 사례 카드 */
-.case-card { border-radius: 12px; overflow:hidden; border:1px solid #0B2545; background:#0B2545; }
-.case-head { background:#B3123B; color:#FFFFFF; padding: 10px 12px; font-size: clamp(17px, 1.2vw, 21px);
-    font-weight: 900; white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
-.case-img { width:100%; height: 220px; object-fit: cover; display:block; background:#222; }
+/* [변경] 국내 지진 중대 피해 사례 카드 : 칸마다 높이 고정 → 5칸 줄 위치 동일 */
+.case-card { border-radius: 12px; overflow:hidden; border:1px solid #0B2545; background:#0B2545;
+    display:flex; flex-direction:column; height: 640px; box-sizing: border-box; }
+.case-head { background:#B3123B; color:#FFFFFF; padding: 0 12px; height: 46px; line-height: 46px;
+    font-size: clamp(16px, 1.15vw, 20px); font-weight: 900; flex-shrink:0;
+    white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+.case-img { width:100%; height: 220px; object-fit: cover; display:block; background:#222; flex-shrink:0; }
 .case-noimg { width:100%; height: 220px; display:flex; align-items:center; justify-content:center;
-    background:#2A2E36; color:#B0B4BC; font-size: 18px; font-weight:700; }
-.case-credit { font-size: 13px; color:#9AA3B5; padding: 4px 12px 0 12px; white-space: nowrap;
-    overflow:hidden; text-overflow: ellipsis; }
-.case-body { padding: 12px 14px 16px 14px; min-height: 300px; box-sizing: border-box; }
-.case-row { font-size: clamp(16px, 1.05vw, 19px); color:#FFFFFF; margin-top: 8px; line-height:1.5; }
+    background:#2A2E36; color:#B0B4BC; font-size: 18px; font-weight:700; flex-shrink:0; }
+.case-credit { font-size: 13px; color:#9AA3B5; padding: 0 12px; height: 24px; line-height: 24px;
+    flex-shrink:0; white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+.case-body { padding: 6px 14px 14px 14px; flex:1; overflow:hidden; box-sizing: border-box; }
+.case-row { font-size: clamp(15px, 1.02vw, 19px); color:#FFFFFF; margin-top: 8px; line-height:1.45;
+    min-height: 2.9em; }
 .case-row b { color:#FFD400; }
-.case-desc { font-size: clamp(15px, 1vw, 18px); color:#DDE3EE; margin-top: 12px; line-height:1.55;
-    border-top: 1px solid #23406B; padding-top: 10px; }
+.case-desc { font-size: clamp(14px, 0.98vw, 18px); color:#DDE3EE; margin-top: 10px; line-height:1.5;
+    border-top: 1px solid #23406B; padding-top: 10px;
+    display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -849,7 +870,7 @@ if not history_df.empty:
     fig_mag.update_yaxes(title_text="건수")
     st.plotly_chart(fig_mag, use_container_width=True, config=PLOTLY_CONFIG)
 
-    # ---------------- [추가] 국내 지진 중대 피해 사례 ----------------
+    # ---------------- 국내 지진 중대 피해 사례 ----------------
     st.markdown('<div class="section-title">🚨 국내 지진 중대 피해 사례</div>', unsafe_allow_html=True)
     st.markdown('<div class="data-range">역대 피해가 가장 컸던 순서 TOP 5 (인명·재산 피해 기준)</div>', unsafe_allow_html=True)
 
@@ -859,10 +880,11 @@ if not history_df.empty:
             src = img_src(cs["image"])
             if src:
                 img_html = f'<img class="case-img" src="{src}" alt="{cs["name"]}">'
-                credit_html = f'<div class="case-credit" title="{cs["credit"]}">{cs["credit"]}</div>'
             else:
                 img_html = '<div class="case-noimg">📷 사진 준비 중</div>'
-                credit_html = ""
+            # [변경] 출처 줄은 모든 칸에 항상 표시 (비어 있어도 같은 높이 유지)
+            credit_txt = cs["credit"] if cs["credit"] else "&nbsp;"
+            credit_html = f'<div class="case-credit" title="{cs["credit"]}">{credit_txt}</div>'
             st.markdown(
                 f'<div class="case-card">'
                 f'<div class="case-head" title="{cs["name"]}">{cs["rank"]}위 · {cs["name"]}</div>'
