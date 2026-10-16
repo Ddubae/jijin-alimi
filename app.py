@@ -72,6 +72,15 @@ INTENSITY_MAP_COLORS = {
     9: "#922B21", 10: "#641E16", 11: "#3B0A0A", 12: "#000000",
 }
 
+# [변경] 최근 5건 번호별 색상 (지도 번호 마커 ↔ 목록 번호 배지 동일 색)
+RANK_COLORS = {
+    1: ("#D50000", "#FFFFFF"),
+    2: ("#FF6D00", "#FFFFFF"),
+    3: ("#FFD600", "#111111"),
+    4: ("#00A86B", "#FFFFFF"),
+    5: ("#2962FF", "#FFFFFF"),
+}
+
 def intensity_color(grade):
     try:
         g = int(float(grade))
@@ -215,6 +224,9 @@ html, body, [class*="css"]  { font-size: 18px !important; }
 .sub-title { font-size: 21px; font-weight: 800; color:#555; margin: 6px 0 14px 0; }
 .data-range { font-size: 19px; font-weight: 800; color: #222; margin-bottom: 14px; }
 
+/* [변경] 도표 사이 구분 여백 + 옅은 구분선 */
+.chart-gap { margin: 44px 0 40px 0; border-top: 1px solid #E6E6E6; }
+
 .legend-chip {
     display:inline-block; padding:6px 16px; border-radius: 20px; color:#fff;
     font-size: 18px; font-weight: 700; margin-right: 10px; margin-bottom: 8px;
@@ -258,6 +270,15 @@ div.stButton > button:hover { background: #B3123B; color: #fff; }
 .info-item-main { font-size: 19px; font-weight: 700; color:#111; }
 .info-item-sub { font-size: 19px; color:#555; margin-top: 4px; }
 .info-empty { font-size: 18px; color:#888; padding: 10px 0; }
+
+/* [변경] 목록 번호 배지 (지도 번호 마커와 같은 색) */
+.rank-badge {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:30px; height:30px; border-radius:50%;
+    font-size:17px; font-weight:900; margin-right:8px;
+    border:2px solid #FFFFFF; box-shadow:0 0 0 1px rgba(0,0,0,0.25);
+    vertical-align: middle;
+}
 
 /* 조회 결과 표 (스타일드 HTML 테이블) */
 .result-table-wrap { max-height: 420px; overflow-y: auto; border:1px solid #eee; border-radius: 10px; }
@@ -368,11 +389,11 @@ CHART_FONT = dict(size=17, color="#111111")
 TICK_FONT = dict(size=17, color="#111111")
 
 
-def style_fig(fig, height=420, title=None, top_margin=60, bottom_margin=50):
+def style_fig(fig, height=420, title=None, top_margin=90, bottom_margin=50):   # [변경] top_margin 60 → 90
     fig.update_layout(
         font=CHART_FONT, height=height,
         margin=dict(t=top_margin, b=bottom_margin),
-        title=dict(text=title, font=dict(size=19, color="#111111")) if title else None,
+        title=dict(text=f"<b>{title}</b>", font=dict(size=25, color="#111111")) if title else None,   # [변경] 제목 19 → 25, 굵게
         plot_bgcolor="white",
     )
     fig.update_xaxes(tickfont=TICK_FONT, showgrid=False)
@@ -432,7 +453,7 @@ if not history_df.empty:
     history_df = history_df[history_df.apply(_is_south_korea, axis=1)].reset_index(drop=True)
 
 
-# [변경] 최근 발생 5건 : 기상청 실시간(최근) + 생활안전지도 이력을 합쳐 최신순 5건
+# 최근 발생 5건 : 기상청 실시간(최근) + 생활안전지도 이력을 합쳐 최신순 5건
 def _to_float(v):
     try:
         return float(v)
@@ -518,38 +539,66 @@ with map_col:
                            doubleClickZoom=False, touchZoom=False)
     fit_bounds_zoomed(m_recent, KOREA_BOUNDS)
 
-    # [변경] 최근 발생 5건 지도 표기
-    for idx, it in enumerate(latest5, 1):
+    # [변경] 번호 마커 : 실제 위치에 작은 점 + 번호 원(목록과 같은 색·같은 번호)
+    #        가까운 위치끼리 번호가 겹치지 않도록 옆으로 비켜서 표시
+    placed = []
+    for idx, it in reversed(list(enumerate(latest5, 1))):   # 1번이 맨 위에 보이도록 5번부터 그림
         if it["lat"] is None or it["lon"] is None:
             continue
+        bg, fg = RANK_COLORS.get(idx, ("#B3123B", "#FFFFFF"))
+        near = sum(1 for (plat, plon) in placed
+                   if abs(plat - it["lat"]) < 0.25 and abs(plon - it["lon"]) < 0.25)
+        placed.append((it["lat"], it["lon"]))
+        shift = near * 30   # 겹치는 개수만큼 오른쪽으로 30px씩 이동
+
         popup_html = f"""
         <div style='font-size:15px; line-height:1.6;'>
-        <b>{idx}. 📍 진원지 :</b> {it['loc']}<br>
+        <b>{idx}번 · 📍 진원지 :</b> {it['loc']}<br>
         <b>강도(규모) :</b> {it['mt']}<br>
         <b>진도 :</b> {it['int_disp']}<br>
         <b>발생 :</b> {it['disp_time']}
         </div>
         """
+        # 실제 진원 위치 점
         folium.CircleMarker(
             location=[it["lat"], it["lon"]],
-            radius=9, color="#D9534F", fill=True, fill_color="#D9534F", fill_opacity=0.9,
+            radius=4, color="#111111", weight=1, fill=True, fill_color=bg, fill_opacity=1,
+        ).add_to(m_recent)
+        # 번호 원
+        folium.Marker(
+            location=[it["lat"], it["lon"]],
+            icon=folium.DivIcon(
+                icon_size=(32, 32),
+                icon_anchor=(16 - shift, 36),   # 점 바로 위에 번호가 오도록
+                html=(
+                    f'<div style="width:32px;height:32px;border-radius:50%;'
+                    f'background:{bg};color:{fg};border:3px solid #FFFFFF;'
+                    f'box-shadow:0 0 0 1px #111,0 2px 6px rgba(0,0,0,0.45);'
+                    f'display:flex;align-items:center;justify-content:center;'
+                    f'font-size:17px;font-weight:900;font-family:sans-serif;">{idx}</div>'
+                ),
+            ),
             popup=folium.Popup(popup_html, max_width=280),
-            tooltip=f"{idx}. {it['loc']} · 규모 {it['mt']}"
+            tooltip=f"{idx}번 · {it['loc']} · 규모 {it['mt']}",
         ).add_to(m_recent)
 
     with st.container(border=True):
         st_folium(m_recent, width=None, height=620, use_container_width=True, returned_objects=[])
 
 with info_col:
-    # [변경] 최근 3일 → 최근 발생 5건 나열 (목록이 패널 박스 안에 들어가도록 한 번에 출력)
+    # [변경] 목록 번호를 지도와 같은 색 원형 배지로 표시, 왼쪽 테두리도 같은 색
     if latest5:
-        items_html = "".join(
-            f'<div class="info-item">'
-            f'<div class="info-item-main">{i}. 📍 {it["loc"]}</div>'
-            f'<div class="info-item-sub">규모 {it["mt"]} · 진도 {it["int_disp"]} · {it["disp_time"]}</div>'
-            f'</div>'
-            for i, it in enumerate(latest5, 1)
-        )
+        items_html = ""
+        for i, it in enumerate(latest5, 1):
+            bg, fg = RANK_COLORS.get(i, ("#B3123B", "#FFFFFF"))
+            items_html += (
+                f'<div class="info-item" style="border-left:6px solid {bg};">'
+                f'<div class="info-item-main">'
+                f'<span class="rank-badge" style="background:{bg}; color:{fg};">{i}</span>'
+                f'📍 {it["loc"]}</div>'
+                f'<div class="info-item-sub">규모 {it["mt"]} · 진도 {it["int_disp"]} · {it["disp_time"]}</div>'
+                f'</div>'
+            )
     else:
         items_html = '<div class="info-empty">표시할 지진 발생 기록이 없습니다.</div>'
 
@@ -664,7 +713,7 @@ if not history_df.empty:
         <div class="stat-sub">{top_city_cnt:,}건 · 전체의 {top_city_pct}%</div>
         </div>""", unsafe_allow_html=True)
 
-    st.write("")
+    st.markdown('<div class="chart-gap"></div>', unsafe_allow_html=True)   # [변경] 카드 ↔ 도표 간격
 
     yearly = history_kr.groupby("year").size().reset_index(name="cnt")
     mean_v, std_v = yearly["cnt"].mean(), yearly["cnt"].std()
@@ -678,6 +727,8 @@ if not history_df.empty:
     fig_year = style_fig(fig_year, height=440, title=f"연도별 지진 발생 건수 ({start_y}년 1월 ~ {end_y}년 9월)")
     fig_year.update_xaxes(type="category", dtick=1, tickangle=0)
     st.plotly_chart(fig_year, use_container_width=True, config=PLOTLY_CONFIG)
+
+    st.markdown('<div class="chart-gap"></div>', unsafe_allow_html=True)   # [변경] 도표 간격
 
     city_top = city_counts.head(15).reset_index()
     city_top.columns = ["city", "cnt"]
@@ -693,6 +744,8 @@ if not history_df.empty:
     fig_city = style_fig(fig_city, height=470, title="지역별(도·시 단위) 지진 발생 건수 TOP 15", bottom_margin=90)
     fig_city.update_xaxes(tickangle=-30, tickfont=dict(size=17, color="#111111"))
     st.plotly_chart(fig_city, use_container_width=True, config=PLOTLY_CONFIG)
+
+    st.markdown('<div class="chart-gap"></div>', unsafe_allow_html=True)   # [변경] 도표 간격
 
     bins = [2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5]
     labels = ["2.0~2.4", "2.5~2.9", "3.0~3.4", "3.5~3.9", "4.0~4.4",
@@ -847,19 +900,19 @@ if not history_df.empty:
                 st.markdown(f"""<div class="stat-card stat-navy">
                 <div class="stat-label">{region_label} 발생 건수</div>
                 <div class="stat-num">{r_total:,}건</div>
-                </div>""", unsafe_allow_html=True)   # [변경] stat-navy 추가
+                </div>""", unsafe_allow_html=True)
             with rc2:
                 st.markdown(f"""<div class="stat-card stat-navy">
                 <div class="stat-label">최대 규모</div>
                 <div class="stat-num">규모 {r_max['mt']}</div>
                 <div class="stat-sub">{fmt_date(r_max['date_str'])}</div>
-                </div>""", unsafe_allow_html=True)   # [변경] stat-navy 추가
+                </div>""", unsafe_allow_html=True)
             with rc3:
                 st.markdown(f"""<div class="stat-card stat-navy">
                 <div class="stat-label">가장 최근 발생</div>
                 <div class="stat-num">{fmt_date(r_latest['date_str'])}</div>
                 <div class="stat-sub">규모 {r_latest['mt']}</div>
-                </div>""", unsafe_allow_html=True)   # [변경] stat-navy 추가
+                </div>""", unsafe_allow_html=True)
 
             st.write("")
 
