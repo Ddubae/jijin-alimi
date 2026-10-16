@@ -36,6 +36,28 @@ NORTH_KOREA_KEYWORDS = [
     "사리원", "강계", "온성", "무산", "회령", "종성", "경원", "경흥",
 ]
 
+# [변경] 대한민국 영토·영해 지진만 허용하는 필터
+DOMESTIC_FCTP = {"3", "5", "11", "13", "14"}   # 2·12(국외 통보) 제외
+KR_SEA_BOUNDS = {"lat_min": 32.0, "lat_max": 38.7, "lon_min": 124.0, "lon_max": 132.0}
+FOREIGN_KEYWORDS = ["일본", "중국", "대만", "러시아", "필리핀", "인도네시아",
+                    "파푸아", "뉴기니", "베트남", "몽골", "해외", "국외"]
+
+
+def is_korea_domestic(item):
+    loc = str(item.get("loc", ""))
+    fctp = str(item.get("fcTp", "")).strip()
+    if fctp and fctp not in DOMESTIC_FCTP:
+        return False
+    if any(kw in loc for kw in NORTH_KOREA_KEYWORDS + FOREIGN_KEYWORDS):
+        return False
+    try:
+        lat, lon = float(item.get("lat")), float(item.get("lon"))
+    except (TypeError, ValueError):
+        return False
+    b = KR_SEA_BOUNDS
+    return b["lat_min"] <= lat <= b["lat_max"] and b["lon_min"] <= lon <= b["lon_max"]
+
+
 # ── 범례 칩 라벨: 물결(~) 기호 대신 하이픈(-)으로 통일해 폰트 깨짐 방지 ──
 BIN_COLORS = {
     "0 - 10건": "#F5B7C4",
@@ -310,11 +332,14 @@ if not recent_df.empty:
             "lat": row.get("lat"),
             "lon": row.get("lon"),
             "inT": row.get("inT", "-"),
+            "fcTp": row.get("fcTp", ""),   # [변경]
         })
 
 seen = set()
 unique_recent = []
 for item in recent_list:
+    if not is_korea_domestic(item):   # [변경] 국내(영토·영해)만 통과
+        continue
     key = (item["time"], item["loc"], item["mt"])
     if key not in seen:
         seen.add(key)
@@ -357,14 +382,14 @@ st.markdown('<div class="alert-badge">🔴 최근 3일 이내 발생 알림</div
 
 if not unique_recent:
     ticker_text = "현재 최근 3일 이내 발생한 지진 속보가 없습니다."
-    duration = 18
+    duration = 9   # [변경] 18 → 9 (2배 빠르게)
 else:
     def fmt_item(it):
         t = it["time"]
         t_disp = f"{t[:4]}.{t[4:6]}.{t[6:8]} {t[8:10]}:{t[10:12]}" if len(t) >= 12 else t
         return f'🔴 {t_disp} · 규모 {it["mt"]} · {it["loc"]}'
     ticker_text = "&nbsp;&nbsp;|&nbsp;&nbsp;".join(fmt_item(it) for it in unique_recent)
-    duration = max(20, len(ticker_text) // 12)
+    duration = max(10, len(ticker_text) // 24)   # [변경] 기존 max(20, len//12) → 2배 빠르게
 
 st.markdown(
     f'<div class="ticker-wrap"><div class="ticker-move" style="animation-duration:{duration}s;">{ticker_text}</div></div>',
