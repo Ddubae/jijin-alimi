@@ -72,7 +72,7 @@ INTENSITY_MAP_COLORS = {
     9: "#922B21", 10: "#641E16", 11: "#3B0A0A", 12: "#000000",
 }
 
-# [변경] 최근 5건 번호별 색상 (지도 번호 마커 ↔ 목록 번호 배지 동일 색)
+# 최근 5건 번호별 색상 (지도 번호 마커 ↔ 목록 번호 배지 동일 색)
 RANK_COLORS = {
     1: ("#D50000", "#FFFFFF"),
     2: ("#FF6D00", "#FFFFFF"),
@@ -194,11 +194,11 @@ html, body, [class*="css"]  { font-size: 18px !important; }
     padding: 22px 28px; border-radius: 10px; color: white; margin-bottom: 6px;
 }
 .hero-title { font-size: 30px; font-weight: 800; margin: 0; }
-.hero-sub { font-size: 18px; opacity: 0.9; margin-top: 4px; }
+.hero-sub { font-size: 20px; opacity: 0.9; margin-top: 4px; }   /* [변경] 18 → 20 */
 
 .alert-badge {
     background:#B3123B; color:#fff; display:inline-block; padding:8px 20px;
-    border-radius: 20px; font-size:19px; font-weight:800; margin: 14px 0 8px 0;
+    border-radius: 20px; font-size:20px; font-weight:800; margin: 14px 0 8px 0;   /* [변경] 19 → 20 */
 }
 
 .ticker-wrap {
@@ -219,25 +219,31 @@ html, body, [class*="css"]  { font-size: 18px !important; }
     to   { transform: translate3d(-100%, 0, 0); }
 }
 
-.section-title { font-size: 24px; font-weight: 800; border-left: 6px solid #B3123B;
-    padding-left: 12px; margin: 30px 0 14px 0; }
-.sub-title { font-size: 21px; font-weight: 800; color:#555; margin: 6px 0 14px 0; }
-.data-range { font-size: 19px; font-weight: 800; color: #222; margin-bottom: 14px; }
+.section-title { font-size: 26px; font-weight: 800; border-left: 6px solid #B3123B;
+    padding-left: 12px; margin: 30px 0 14px 0; }   /* [변경] 24 → 26 */
+.sub-title { font-size: 22px; font-weight: 800; color:#555; margin: 6px 0 14px 0; }   /* [변경] 21 → 22 */
+.data-range { font-size: 20px; font-weight: 800; color: #222; margin-bottom: 14px; }   /* [변경] 19 → 20 */
+.intro-text { font-size: 20px; color:#555; margin-bottom: 16px; line-height:1.6; }   /* [변경] 안내 문구 17 → 20 */
 
-/* [변경] 도표 사이 구분 여백 + 옅은 구분선 */
+/* 도표 사이 구분 여백 + 옅은 구분선 */
 .chart-gap { margin: 44px 0 40px 0; border-top: 1px solid #E6E6E6; }
 
 .legend-chip {
     display:inline-block; padding:6px 16px; border-radius: 20px; color:#fff;
-    font-size: 18px; font-weight: 700; margin-right: 10px; margin-bottom: 8px;
+    font-size: 19px; font-weight: 700; margin-right: 10px; margin-bottom: 8px;
     white-space: nowrap; letter-spacing: 0.5px;
-}
+}   /* [변경] 18 → 19 */
 .legend-chip-dark { color:#111; border:1px solid #ccc; }
 
-.stat-card { background:#fafafa; border:1px solid #eee; border-radius: 12px; padding: 22px; text-align:center; }
-.stat-label { font-size: 20px; font-weight: 800; color:#333; }
-.stat-num { font-size: 40px; font-weight: 900; color:#B3123B; margin-top: 10px; }
-.stat-sub { font-size: 18px; color:#666; margin-top: 8px; }
+/* [변경] 통계 카드 : 글자 키우고 화면 폭에 맞춰 자동 축소 → 줄바꿈·잘림 방지 */
+.stat-card { background:#fafafa; border:1px solid #eee; border-radius: 12px; padding: 24px 16px;
+    text-align:center; overflow:hidden; }
+.stat-label { font-size: clamp(18px, 1.35vw, 23px); font-weight: 800; color:#333;
+    white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+.stat-num { font-size: clamp(26px, 2.5vw, 42px); font-weight: 900; color:#B3123B; margin-top: 10px;
+    white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+.stat-sub { font-size: clamp(16px, 1.1vw, 20px); color:#666; margin-top: 8px;
+    white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
 
 /* 통계 카드: 배경 네이비 / 빨간 글자 → 노랑 / 검정 글자 → 흰색 */
 .stat-card.stat-navy { background:#0B2545; border:1px solid #0B2545; }
@@ -246,39 +252,46 @@ html, body, [class*="css"]  { font-size: 18px !important; }
 .stat-card.stat-navy .stat-sub { color:#FFFFFF; }
 
 .level-card { border-radius: 10px 10px 0 0; padding: 18px; text-align:center; color:white;
-    font-weight: 800; font-size: 23px; }
-.level-sub { font-size: 18px; font-weight: 600; margin-top: 6px; }
+    font-weight: 800; font-size: clamp(19px, 1.5vw, 24px); white-space: nowrap; }   /* [변경] 줄바꿈 방지 */
+.level-sub { font-size: clamp(16px, 1.15vw, 20px); font-weight: 600; margin-top: 6px; white-space: nowrap; }   /* [변경] */
 
 .safety-card { border-radius: 10px 10px 0 0; padding: 20px; text-align:left;
-    min-height: 220px; background:#f5f5f5; }
-.safety-title { font-size: 21px; font-weight: 800; color:#B3123B; }
-.safety-desc { font-size: 18px; margin-top: 10px; line-height:1.7; color:#222; font-weight:500; }
+    min-height: 270px; background:#f5f5f5; }   /* [변경] 220 → 270 (글자 키운 만큼 높이 확보) */
+.safety-title { font-size: 22px; font-weight: 800; color:#B3123B; }   /* [변경] 21 → 22 */
+.safety-desc { font-size: 19px; margin-top: 10px; line-height:1.7; color:#222; font-weight:500; }   /* [변경] 18 → 19 */
 
 div.stButton > button {
     width: 100%; border-radius: 0 0 10px 10px; border: none;
-    background: #333; color: #fff; font-weight: 700; font-size: 16px;
+    background: #333; color: #fff; font-weight: 700; font-size: 18px;
     padding: 10px 0; margin-top: -2px;
     transition: 0.2s;
-}
+}   /* [변경] 16 → 18 */
+div.stButton > button p { font-size: 18px !important; }   /* [변경] */
 div.stButton > button:hover { background: #B3123B; color: #fff; }
 
 .info-panel { background:#fafafa; border:1px solid #eee; border-radius: 12px;
-    padding: 20px; height: 100%; }
-.info-panel-title { font-size: 22px; font-weight: 800; color:#222; margin-bottom: 12px; }
+    padding: 20px; height: 100%; overflow:hidden; }
+.info-panel-title { font-size: 24px; font-weight: 800; color:#222; margin-bottom: 12px; }   /* [변경] 22 → 24 */
+.info-panel-desc { font-size: 19px; color:#555; margin-bottom: 14px; white-space: nowrap;
+    overflow:hidden; text-overflow: ellipsis; }   /* [변경] 17 → 19, 한 줄 유지 */
 .info-item { background:#fff; border:1px solid #eee; border-left:5px solid #B3123B;
     border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
-.info-item-main { font-size: 19px; font-weight: 700; color:#111; }
-.info-item-sub { font-size: 19px; color:#555; margin-top: 4px; }
-.info-empty { font-size: 18px; color:#888; padding: 10px 0; }
+/* [변경] 목록 제목 줄 : 번호 + 지역명을 한 줄로, 폭에 맞춰 글자 자동 조절 */
+.info-item-main { display:flex; align-items:center; gap:8px;
+    font-size: clamp(17px, 1.2vw, 22px); font-weight: 700; color:#111;
+    white-space: nowrap; overflow:hidden; }
+.info-item-main .loc-text { overflow:hidden; text-overflow: ellipsis; min-width:0; }
+.info-item-sub { font-size: clamp(17px, 1.15vw, 21px); color:#555; margin-top: 6px;
+    white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+.info-empty { font-size: 19px; color:#888; padding: 10px 0; }   /* [변경] 18 → 19 */
 
-/* [변경] 목록 번호 배지 (지도 번호 마커와 같은 색) */
+/* 목록 번호 배지 (지도 번호 마커와 같은 색) */
 .rank-badge {
     display:inline-flex; align-items:center; justify-content:center;
-    width:30px; height:30px; border-radius:50%;
-    font-size:17px; font-weight:900; margin-right:8px;
+    width:32px; height:32px; border-radius:50%; flex-shrink:0;
+    font-size:18px; font-weight:900;
     border:2px solid #FFFFFF; box-shadow:0 0 0 1px rgba(0,0,0,0.25);
-    vertical-align: middle;
-}
+}   /* [변경] 30 → 32, 줄어들지 않게 고정 */
 
 /* 조회 결과 표 (스타일드 HTML 테이블) */
 .result-table-wrap { max-height: 420px; overflow-y: auto; border:1px solid #eee; border-radius: 10px; }
@@ -292,6 +305,11 @@ div.stButton > button:hover { background: #B3123B; color: #fff; }
     color: #111111 !important;
     margin-bottom: 6px;
 }
+/* [변경] 선택 상자 글자 키우기 */
+div[data-baseweb="select"] * { font-size: 19px !important; }
+
+/* [변경] 맨 아래 출처 문구 키우기 */
+[data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p { font-size: 17px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -385,15 +403,16 @@ def fmt_date(date_str):
         return date_str
 
 
-CHART_FONT = dict(size=17, color="#111111")
-TICK_FONT = dict(size=17, color="#111111")
+CHART_FONT = dict(size=19, color="#111111")   # [변경] 17 → 19
+TICK_FONT = dict(size=19, color="#111111")    # [변경] 17 → 19
+BAR_TEXT_FONT = dict(size=19, color="#111111")   # [변경] 막대 위 숫자 17 → 19
 
 
-def style_fig(fig, height=420, title=None, top_margin=90, bottom_margin=50):   # [변경] top_margin 60 → 90
+def style_fig(fig, height=420, title=None, top_margin=90, bottom_margin=50):
     fig.update_layout(
         font=CHART_FONT, height=height,
         margin=dict(t=top_margin, b=bottom_margin),
-        title=dict(text=f"<b>{title}</b>", font=dict(size=25, color="#111111")) if title else None,   # [변경] 제목 19 → 25, 굵게
+        title=dict(text=f"<b>{title}</b>", font=dict(size=25, color="#111111")) if title else None,
         plot_bgcolor="white",
     )
     fig.update_xaxes(tickfont=TICK_FONT, showgrid=False)
@@ -531,7 +550,7 @@ st.markdown(
 # ---------------- 실시간 지진 발생 지도 ----------------
 st.markdown('<div class="section-title">🗺️ 실시간 지진 발생 지도</div>', unsafe_allow_html=True)
 
-map_col, info_col = st.columns([1.3, 1])
+map_col, info_col = st.columns([1.15, 1])   # [변경] 1.3 : 1 → 1.15 : 1 (목록 칸 넓혀 지역명 한 줄 유지)
 
 with map_col:
     m_recent = folium.Map(location=[36.0, 127.7], tiles="OpenStreetMap",
@@ -539,8 +558,7 @@ with map_col:
                            doubleClickZoom=False, touchZoom=False)
     fit_bounds_zoomed(m_recent, KOREA_BOUNDS)
 
-    # [변경] 번호 마커 : 실제 위치에 작은 점 + 번호 원(목록과 같은 색·같은 번호)
-    #        가까운 위치끼리 번호가 겹치지 않도록 옆으로 비켜서 표시
+    # 번호 마커 : 실제 위치에 작은 점 + 번호 원(목록과 같은 색·같은 번호)
     placed = []
     for idx, it in reversed(list(enumerate(latest5, 1))):   # 1번이 맨 위에 보이도록 5번부터 그림
         if it["lat"] is None or it["lon"] is None:
@@ -552,24 +570,22 @@ with map_col:
         shift = near * 30   # 겹치는 개수만큼 오른쪽으로 30px씩 이동
 
         popup_html = f"""
-        <div style='font-size:15px; line-height:1.6;'>
+        <div style='font-size:16px; line-height:1.6;'>
         <b>{idx}번 · 📍 진원지 :</b> {it['loc']}<br>
         <b>강도(규모) :</b> {it['mt']}<br>
         <b>진도 :</b> {it['int_disp']}<br>
         <b>발생 :</b> {it['disp_time']}
         </div>
         """
-        # 실제 진원 위치 점
         folium.CircleMarker(
             location=[it["lat"], it["lon"]],
             radius=4, color="#111111", weight=1, fill=True, fill_color=bg, fill_opacity=1,
         ).add_to(m_recent)
-        # 번호 원
         folium.Marker(
             location=[it["lat"], it["lon"]],
             icon=folium.DivIcon(
                 icon_size=(32, 32),
-                icon_anchor=(16 - shift, 36),   # 점 바로 위에 번호가 오도록
+                icon_anchor=(16 - shift, 36),
                 html=(
                     f'<div style="width:32px;height:32px;border-radius:50%;'
                     f'background:{bg};color:{fg};border:3px solid #FFFFFF;'
@@ -578,7 +594,7 @@ with map_col:
                     f'font-size:17px;font-weight:900;font-family:sans-serif;">{idx}</div>'
                 ),
             ),
-            popup=folium.Popup(popup_html, max_width=280),
+            popup=folium.Popup(popup_html, max_width=300),
             tooltip=f"{idx}번 · {it['loc']} · 규모 {it['mt']}",
         ).add_to(m_recent)
 
@@ -586,17 +602,17 @@ with map_col:
         st_folium(m_recent, width=None, height=620, use_container_width=True, returned_objects=[])
 
 with info_col:
-    # [변경] 목록 번호를 지도와 같은 색 원형 배지로 표시, 왼쪽 테두리도 같은 색
+    # [변경] 맨 아래 줄 : 규모 삭제 → "진도 · 날짜"만 표시 / 지역명 한 줄 고정(길면 … 처리, 마우스 올리면 전체 표시)
     if latest5:
         items_html = ""
         for i, it in enumerate(latest5, 1):
             bg, fg = RANK_COLORS.get(i, ("#B3123B", "#FFFFFF"))
             items_html += (
                 f'<div class="info-item" style="border-left:6px solid {bg};">'
-                f'<div class="info-item-main">'
+                f'<div class="info-item-main" title="{it["loc"]}">'
                 f'<span class="rank-badge" style="background:{bg}; color:{fg};">{i}</span>'
-                f'📍 {it["loc"]}</div>'
-                f'<div class="info-item-sub">규모 {it["mt"]} · 진도 {it["int_disp"]} · {it["disp_time"]}</div>'
+                f'<span class="loc-text">📍 {it["loc"]}</span></div>'
+                f'<div class="info-item-sub">진도 {it["int_disp"]} · {it["disp_time"]}</div>'
                 f'</div>'
             )
     else:
@@ -605,8 +621,8 @@ with info_col:
     st.markdown(
         f'<div class="info-panel">'
         f'<div class="info-panel-title">📋 최근 발생 지진 5건</div>'
-        f'<div style="font-size:17px; color:#555; margin-bottom:14px;">'
-        f'가장 최근에 발생한 지진 <b style="color:#B3123B; font-size:21px;">{len(latest5)}건</b>을 최신순으로 보여드립니다.'
+        f'<div class="info-panel-desc">'
+        f'가장 최근에 발생한 지진 <b style="color:#B3123B; font-size:22px;">{len(latest5)}건</b>을 최신순으로 보여드립니다.'
         f'</div>'
         f'{items_html}'
         f'</div>',
@@ -635,7 +651,7 @@ for col, lvl in zip(cols, INTENSITY_LEVELS):
 if st.session_state.selected_level:
     lvl = next(l for l in INTENSITY_LEVELS if l["key"] == st.session_state.selected_level)
     st.markdown(f"### 🎬 {lvl['label']} — {lvl['desc']}")
-    st.markdown(f"<p style='font-size:18px;'>{lvl['detail']}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='font-size:20px;'>{lvl['detail']}</p>", unsafe_allow_html=True)   # [변경] 18 → 20
     vc1, vc2, vc3 = st.columns([1, 2, 1])
     with vc2:
         st.video(lvl["video"])
@@ -704,7 +720,7 @@ if not history_df.empty:
         st.markdown(f"""<div class="stat-card stat-navy">
         <div class="stat-label">역대 최대 규모</div>
         <div class="stat-num">규모 {max_row['mt']}</div>
-        <div class="stat-sub">{fmt_date(max_row['date_str'])} · {max_row['loc_text']}</div>
+        <div class="stat-sub" title="{fmt_date(max_row['date_str'])} · {max_row['loc_text']}">{fmt_date(max_row['date_str'])} · {max_row['loc_text']}</div>
         </div>""", unsafe_allow_html=True)
     with c3:
         st.markdown(f"""<div class="stat-card stat-navy">
@@ -713,7 +729,7 @@ if not history_df.empty:
         <div class="stat-sub">{top_city_cnt:,}건 · 전체의 {top_city_pct}%</div>
         </div>""", unsafe_allow_html=True)
 
-    st.markdown('<div class="chart-gap"></div>', unsafe_allow_html=True)   # [변경] 카드 ↔ 도표 간격
+    st.markdown('<div class="chart-gap"></div>', unsafe_allow_html=True)
 
     yearly = history_kr.groupby("year").size().reset_index(name="cnt")
     mean_v, std_v = yearly["cnt"].mean(), yearly["cnt"].std()
@@ -722,13 +738,13 @@ if not history_df.empty:
     fig_year = go.Figure(go.Bar(
         x=yearly["year"], y=yearly["cnt"], marker_color=yearly["color"],
         text=[f"{v}건" for v in yearly["cnt"]], textposition="outside",
-        textfont=dict(size=17, color="#111111")
+        textfont=BAR_TEXT_FONT, cliponaxis=False   # [변경] 글자 키움 + 막대 위 숫자 잘림 방지
     ))
-    fig_year = style_fig(fig_year, height=440, title=f"연도별 지진 발생 건수 ({start_y}년 1월 ~ {end_y}년 9월)")
+    fig_year = style_fig(fig_year, height=460, title=f"연도별 지진 발생 건수 ({start_y}년 1월 ~ {end_y}년 9월)")   # [변경] 440 → 460
     fig_year.update_xaxes(type="category", dtick=1, tickangle=0)
     st.plotly_chart(fig_year, use_container_width=True, config=PLOTLY_CONFIG)
 
-    st.markdown('<div class="chart-gap"></div>', unsafe_allow_html=True)   # [변경] 도표 간격
+    st.markdown('<div class="chart-gap"></div>', unsafe_allow_html=True)
 
     city_top = city_counts.head(15).reset_index()
     city_top.columns = ["city", "cnt"]
@@ -739,13 +755,13 @@ if not history_df.empty:
     fig_city = go.Figure(go.Bar(
         x=city_top["city"], y=city_top["cnt"], marker_color=city_top["color"],
         text=[f"{v}건" for v in city_top["cnt"]], textposition="outside",
-        textfont=dict(size=17, color="#111111")
+        textfont=BAR_TEXT_FONT, cliponaxis=False   # [변경]
     ))
-    fig_city = style_fig(fig_city, height=470, title="지역별(도·시 단위) 지진 발생 건수 TOP 15", bottom_margin=90)
-    fig_city.update_xaxes(tickangle=-30, tickfont=dict(size=17, color="#111111"))
+    fig_city = style_fig(fig_city, height=500, title="지역별(도·시 단위) 지진 발생 건수 TOP 15", bottom_margin=120)   # [변경] 470 → 500, 하단 90 → 120 (지역명 잘림 방지)
+    fig_city.update_xaxes(tickangle=-30, tickfont=TICK_FONT)
     st.plotly_chart(fig_city, use_container_width=True, config=PLOTLY_CONFIG)
 
-    st.markdown('<div class="chart-gap"></div>', unsafe_allow_html=True)   # [변경] 도표 간격
+    st.markdown('<div class="chart-gap"></div>', unsafe_allow_html=True)
 
     bins = [2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5]
     labels = ["2.0~2.4", "2.5~2.9", "3.0~3.4", "3.5~3.9", "4.0~4.4",
@@ -758,9 +774,9 @@ if not history_df.empty:
     fig_mag = go.Figure(go.Bar(
         x=mag_dist["range"], y=mag_dist["cnt"], marker_color="#B3123B",
         text=[f"{v:,}건" for v in mag_dist["cnt"]], textposition="outside",
-        textfont=dict(size=17, color="#111111")
+        textfont=BAR_TEXT_FONT, cliponaxis=False   # [변경]
     ))
-    fig_mag = style_fig(fig_mag, height=420, title="규모별 발생 분포 (0.5 단위 구간)")
+    fig_mag = style_fig(fig_mag, height=440, title="규모별 발생 분포 (0.5 단위 구간)", bottom_margin=70)   # [변경] 420 → 440, 하단 50 → 70
     fig_mag.update_xaxes(title_text="규모 구간")
     fig_mag.update_yaxes(title_text="건수")
     st.plotly_chart(fig_mag, use_container_width=True, config=PLOTLY_CONFIG)
@@ -774,7 +790,7 @@ if not history_df.empty:
     freq_col, intensity_col = st.columns(2)
 
     with freq_col:
-        st.markdown("<div style='font-size:19px; font-weight:800; margin-bottom:8px;'>🔴 지역별 발생 빈도</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size:21px; font-weight:800; margin-bottom:8px;'>🔴 지역별 발생 빈도</div>", unsafe_allow_html=True)   # [변경] 19 → 21
         legend_html = "".join([
             f'<span class="legend-chip" style="background:{c};">{label}</span>'
             for label, c in BIN_COLORS.items()
@@ -793,7 +809,7 @@ if not history_df.empty:
             label = bin_label(cnt)
             color = BIN_COLORS[label]
             popup_html = f"""
-            <div style='font-size:14px; line-height:1.6;'>
+            <div style='font-size:16px; line-height:1.6;'>
             <b>📍 진원지 :</b> {row['loc_text']}<br>
             <b>강도(규모) :</b> {row['mt']}<br>
             <b>{prov} 누적 발생 :</b> {cnt}건 ({label})
@@ -802,14 +818,14 @@ if not history_df.empty:
             folium.CircleMarker(
                 location=[row["lat"], row["lon"]],
                 radius=3.5, color=color, fill=True, fill_color=color, fill_opacity=0.85,
-                popup=folium.Popup(popup_html, max_width=260),
+                popup=folium.Popup(popup_html, max_width=280),
             ).add_to(m_freq)
 
         with st.container(border=True):
             st_folium(m_freq, width=None, height=560, use_container_width=True, returned_objects=[])
 
     with intensity_col:
-        st.markdown("<div style='font-size:19px; font-weight:800; margin-bottom:8px;'>🟠 지역별 발생 강도(진도)</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size:21px; font-weight:800; margin-bottom:8px;'>🟠 지역별 발생 강도(진도)</div>", unsafe_allow_html=True)   # [변경] 19 → 21
 
         grades_present = sorted(history_df["intensity"].dropna().unique().astype(int).tolist())
         legend_html2 = "".join([
@@ -829,7 +845,7 @@ if not history_df.empty:
             color = intensity_color(grade)
             grade_disp = int(grade) if pd.notna(grade) else "-"
             popup_html = f"""
-            <div style='font-size:14px; line-height:1.6;'>
+            <div style='font-size:16px; line-height:1.6;'>
             <b>📍 진원지 :</b> {row['loc_text']}<br>
             <b>강도(규모) :</b> {row['mt']}<br>
             <b>진도 :</b> {grade_disp}
@@ -838,7 +854,7 @@ if not history_df.empty:
             folium.CircleMarker(
                 location=[row["lat"], row["lon"]],
                 radius=3.5, color=color, fill=True, fill_color=color, fill_opacity=0.85,
-                popup=folium.Popup(popup_html, max_width=260),
+                popup=folium.Popup(popup_html, max_width=280),
             ).add_to(m_intensity)
 
         with st.container(border=True):
@@ -847,11 +863,11 @@ if not history_df.empty:
     # ---------------- 내 지역 지진 발생기록 찾기 ----------------
     st.markdown('<div class="section-title">🔎 내 지역 지진 발생기록 찾기</div>', unsafe_allow_html=True)
     st.markdown(
-        "<div style='font-size:17px; color:#555; margin-bottom:16px;'>"
+        "<div class='intro-text'>"
         "실제 관측 데이터를 기반으로, 원하시는 시·도와 시·군·구를 선택하면 해당 지역에서 발생한 "
         "지진 이력을 날짜·규모·진도까지 모두 조회할 수 있습니다.</div>",
         unsafe_allow_html=True
-    )
+    )   # [변경] 17 → 20 (intro-text)
 
     with st.container(border=True):
         available_provinces = sorted(
@@ -925,9 +941,9 @@ if not history_df.empty:
 
             styled_table = (
                 table_df.reset_index(drop=True).style
-                .set_properties(**{"font-size": "17px", "padding": "10px 8px"})
+                .set_properties(**{"font-size": "19px", "padding": "10px 8px"})   # [변경] 17 → 19
                 .set_table_styles([
-                    {"selector": "th", "props": [("font-size", "17px"), ("font-weight", "800"),
+                    {"selector": "th", "props": [("font-size", "19px"), ("font-weight", "800"),   # [변경] 17 → 19
                                                    ("background-color", "#B3123B"), ("color", "#ffffff"),
                                                    ("padding", "10px 8px")]},
                 ])
