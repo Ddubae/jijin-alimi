@@ -1,124 +1,3 @@
-import re
-from datetime import datetime, timedelta
-
-import requests
-import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
-import folium
-from streamlit_folium import st_folium
-import streamlit as st
-
-st.set_page_config(page_title="대한민국 지진 알리미 (모바일)", page_icon="🌍", layout="centered")
-
-# ------------------------------------------------------------------
-# 자동 번역 방지
-# ------------------------------------------------------------------
-NOTRANSLATE_SCRIPT = """
-<script>
-(function() {
-    var meta = document.createElement('meta');
-    meta.name = "google";
-    meta.content = "notranslate";
-    document.getElementsByTagName('head')[0].appendChild(meta);
-    document.documentElement.setAttribute('translate', 'no');
-    document.documentElement.classList.add('notranslate');
-    document.body.classList.add('notranslate');
-})();
-</script>
-"""
-st.markdown(NOTRANSLATE_SCRIPT, unsafe_allow_html=True)
-
-# ------------------------------------------------------------------
-# 상수 / API 설정 (원본 PC버전 데이터 로직과 완전히 동일 - 절대 변경 금지 영역)
-# ------------------------------------------------------------------
-KMA_KEY = "69bb08cc0eacf8cbdfffc6b9b4ecf242d33a1cc5955004d3048de6fb54c985df"
-SAFEMAP_KEY = "IE6DVJTK-IE6D-IE6D-IE6D-IE6DVJTKDJ"
-
-KMA_URL = "https://apis.data.go.kr/1360000/EqkInfoService/getEqkMsg"
-SAFEMAP_URL = "https://www.safemap.go.kr/openapi2/IF_0030"
-
-KOREA_BOUNDS = [[33.0, 125.2], [38.65, 129.6]]
-ZOOM_IN_PADDING = 60
-
-PROVINCE_CENTER = {
-    "서울": (37.5665, 126.9780), "경기": (37.4138, 127.5183), "인천": (37.4563, 126.7052),
-    "강원": (37.8228, 128.1555), "충북": (36.8000, 127.7000), "충남": (36.5184, 126.8000),
-    "대전": (36.3504, 127.3845), "세종": (36.4800, 127.2890), "전북": (35.7175, 127.1530),
-    "전남": (34.8161, 126.4630), "광주": (35.1595, 126.8526), "경북": (36.4919, 128.8889),
-    "경남": (35.4606, 128.2132), "대구": (35.8714, 128.6014), "울산": (35.5384, 129.3114),
-    "부산": (35.1796, 129.0756), "제주": (33.4996, 126.5312),
-}
-
-NORTH_KOREA_KEYWORDS = [
-    "북한", "함경북도", "함경남도", "량강도", "양강도", "자강도",
-    "평안북도", "평안남도", "황해북도", "황해남도", "평양", "남포",
-    "나선", "개성", "혜산", "청진", "함흥", "신의주", "원산", "해주",
-    "사리원", "강계", "온성", "무산", "회령", "종성", "경원", "경흥",
-]
-
-BIN_COLORS = {
-    "0 - 10건": "#F5B7C4",
-    "11 - 50건": "#E85D8A",
-    "51 - 100건": "#B3123B",
-    "100건 초과": "#5C0A22",
-}
-
-INTENSITY_MAP_COLORS = {
-    1: "#D6EAF8", 2: "#AED6F1", 3: "#7FB3D5", 4: "#F9E79F",
-    5: "#F5B041", 6: "#E67E22", 7: "#D35400", 8: "#C0392B",
-    9: "#922B21", 10: "#641E16", 11: "#3B0A0A", 12: "#000000",
-}
-
-WEEKDAY_KR = ["월", "화", "수", "목", "금", "토", "일"]
-
-
-def intensity_color(grade):
-    try:
-        g = int(float(grade))
-    except (TypeError, ValueError):
-        g = 1
-    return INTENSITY_MAP_COLORS.get(min(max(g, 1), 12), "#999999")
-
-
-def fit_bounds_zoomed(m, bounds, pad=ZOOM_IN_PADDING):
-    m.fit_bounds(
-        bounds,
-        padding_top_left=(-pad, -pad),
-        padding_bottom_right=(-pad, -pad),
-    )
-
-
-def clean_paren(text):
-    if not isinstance(text, str):
-        return text
-    cleaned = re.sub(r"\([^)]*\)", "", text)
-    cleaned = re.sub(r"\s{2,}", " ", cleaned).strip(" ,")
-    return cleaned
-
-
-def to_watch_url(embed_url):
-    return embed_url.replace("/embed/", "/watch?v=")
-
-
-INTENSITY_LEVELS = [
-    {"key": "1_2", "label": "진도 Ⅰ~Ⅱ", "desc": "거의 느낄 수 없음",
-     "detail": "특별히 좋은 조건에서 극소수만 느끼며, 대부분 지진계에만 기록되는 수준입니다.",
-     "color": "#8E8E93", "video": "https://www.youtube.com/embed/2tt1wRGJY8c"},
-    {"key": "3_4", "label": "진도 Ⅲ~Ⅳ", "desc": "약한 흔들림",
-     "detail": "실내에 있는 사람 다수가 흔들림을 느끼며, 매달린 물체가 흔들릴 수 있습니다.",
-     "color": "#E8A93A", "video": "https://www.youtube.com/embed/oNTGC34kZtU"},
-    {"key": "5_6", "label": "진도 Ⅴ~Ⅵ", "desc": "뚜렷한 흔들림",
-     "detail": "거의 모든 사람이 느끼고, 놀라서 밖으로 대피하는 사람이 생기며 물건이 넘어질 수 있습니다.",
-     "color": "#D9534F", "video": "https://www.youtube.com/embed/8LUG9Iuk8rI"},
-    {"key": "7_8", "label": "진도 Ⅶ~Ⅷ", "desc": "구조물 피해 시작",
-     "detail": "내진설계가 부실한 건물에 균열·붕괴가 시작되고, 서있기 힘들 정도의 흔들림입니다.",
-     "color": "#B3123B", "video": "https://www.youtube.com/embed/2tt1wRGJY8c"},
-    {"key": "9_up", "label": "진도 Ⅸ 이상", "desc": "심각한 붕괴",
-     "detail": "내진 여부와 관계없이 건물 붕괴가 발생할 수 있는 매우 위험한 수준입니다.",
-     "color": "#5C0A22", "video": "https://www.youtube.com/embed/oNTGC34kZtU"},
-]
-
 SAFETY_STEPS = [
     {"key": "step1", "title": "1단계. 평소 대비",
      "desc": "가구·가전제품이 넘어지거나 떨어지지 않도록 벽에 단단히 고정해두고, 소화기·손전등·생수 등 비상용품을 미리 챙겨둡니다. 가족과 함께 대피 장소와 만날 장소를 미리 정해둡니다.",
@@ -244,7 +123,7 @@ def fetch_history_eq():
 
 
 # ------------------------------------------------------------------
-# 모바일 전용 CSS ("중대재해 알리미" 모바일 디자인 패턴 적용 — 내용(데이터)은 지진 원본 그대로)
+# 모바일 전용 CSS
 # ------------------------------------------------------------------
 mobile_css = """
 <style>
@@ -323,7 +202,7 @@ body, .stApp { background-color: #EEF1F6; }
 }
 .m-ticker-move {
     display: inline-block; padding-left: 100%;
-    animation: m-scroll 50s linear infinite;
+    animation: m-scroll 25s linear infinite;   /* [수정] 50s → 25s (2배 빠르게) */
     color: #F2C744 !important; font-size: 13px; font-weight: 600; line-height: 40px;
 }
 @keyframes m-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
@@ -435,14 +314,14 @@ body, .stApp { background-color: #EEF1F6; }
 .m-list-link { font-size: 11.5px; font-weight: 800; color: #0B2545 !important; text-decoration: none; white-space: nowrap; align-self: center; }
 .m-empty-msg { font-size: 13px; color: #8894A6 !important; text-align: center; padding: 24px 0; }
 
-/* 지도/카드형 컨테이너 공통 (st.container(border=True)를 카드처럼) */
+/* 지도/카드형 컨테이너 공통 */
 [data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 14px !important; border: none !important;
     box-shadow: 0 3px 10px rgba(15,30,60,0.08) !important;
     overflow: hidden; margin-bottom: 14px; background: white !important;
 }
 
-/* 범례 칩 (가로 스크롤 허용) */
+/* 범례 칩 */
 .m-legend-row { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px 2px; -webkit-overflow-scrolling: touch; }
 .m-legend-chip {
     flex-shrink: 0; display: inline-block; padding: 5px 12px; border-radius: 999px;
@@ -476,7 +355,7 @@ CHART_CONFIG = {
 }
 
 # ------------------------------------------------------------------
-# 데이터 로딩 & 가공 (원본 PC버전과 동일 로직)
+# 데이터 로딩 & 가공
 # ------------------------------------------------------------------
 recent_df = fetch_recent_eq()
 history_df = fetch_history_eq()
@@ -491,11 +370,14 @@ if not recent_df.empty:
             "lat": row.get("lat"),
             "lon": row.get("lon"),
             "inT": row.get("inT", "-"),
+            "fcTp": row.get("fcTp", ""),          # [추가] 통보종류
         })
 
 seen = set()
 unique_recent = []
 for item in recent_list:
+    if not is_korea_domestic(item):              # [추가] 대한민국 영토·영해만 통과
+        continue
     key = (item["time"], item["loc"], item["mt"])
     if key not in seen:
         seen.add(key)
@@ -517,10 +399,11 @@ if not history_df.empty:
 
     def _is_south_korea(row):
         loc = str(row["loc_text"])
-        if any(kw in loc for kw in NORTH_KOREA_KEYWORDS):
+        if any(kw in loc for kw in NORTH_KOREA_KEYWORDS + FOREIGN_KEYWORDS):
             return False
         lat, lon = row["lat"], row["lon"]
-        if not (32.8 <= lat <= 38.65 and 124.5 <= lon <= 130.0):
+        # [수정] 경도 상한 130.0 → 132.0 (울릉도·독도 해역 포함)
+        if not (32.8 <= lat <= 38.65 and 124.5 <= lon <= 132.0):
             return False
         return True
 
@@ -552,7 +435,7 @@ if unique_recent:
         ticker_parts.append(f"📢 {t_disp} · {it['loc']} · 규모 {it['mt']} · 진도 {clean_paren(it['inT'])}")
     ticker_text = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(ticker_parts)
 else:
-    ticker_text = "현재 최근 3일 이내 발생한 지진 속보가 없습니다."
+    ticker_text = "현재 최근 3일 이내 국내(영토·영해) 지진 속보가 없습니다."   # [수정]
 
 st.markdown(
     '<div class="m-ticker">'
@@ -582,7 +465,7 @@ with st.expander("📌 지진 규모와 진도, 무엇이 다를까요?"):
 st.markdown('<div class="m-section-title">🚨 최근 3일 이내 발생 지진</div>', unsafe_allow_html=True)
 
 if not unique_recent:
-    st.markdown('<div class="m-empty-msg">현재 최근 3일 이내 발생한 지진이 없습니다.<br>평소 대비 요령을 미리 확인해보세요.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="m-empty-msg">현재 최근 3일 이내 국내(영토·영해)에서 발생한 지진이 없습니다.<br>평소 대비 요령을 미리 확인해보세요.</div>', unsafe_allow_html=True)
 else:
     def build_recent_card_html(it, idx):
         t = it["time"]
@@ -659,7 +542,7 @@ def build_level_card_html(lvl):
     html.append(f'<div class="m-date">{lvl["desc"]}</div>')
     html.append('</div>')
     html.append('<div class="m-card-body">')
-    html.append(f'<div class="m-field-label">📝 상세 설명</div>')
+    html.append('<div class="m-field-label">📝 상세 설명</div>')
     html.append(f'<div class="m-tip-box">{lvl["detail"]}</div>')
     html.append('</div>')
     html.append(f'<a class="m-detail-btn" href="{to_watch_url(lvl["video"])}" target="_blank">▶ 영상으로 보기</a>')
@@ -730,7 +613,7 @@ if not history_df.empty:
         unsafe_allow_html=True
     )
 
-    # ---- 연도별 발생건수 + 평균규모 추이 (다크 네이비 차트) ----
+    # ---- 연도별 발생건수 + 평균규모 추이 ----
     yearly = history_kr.groupby("year").agg(cnt=("mt", "size"), avg_mag=("mt", "mean")).reset_index()
     max_cnt = int(yearly["cnt"].max()) if not yearly.empty else 1
     max_avg = float(yearly["avg_mag"].max()) if not yearly.empty else 1
@@ -956,4 +839,3 @@ st.markdown(
 if st.button("🔄  새로고침", key="mobile_refresh", use_container_width=True):
     st.cache_data.clear()
     st.rerun()
-
