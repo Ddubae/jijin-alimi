@@ -1,4 +1,7 @@
 import re
+import os        # [추가]
+import base64    # [추가]
+from urllib.parse import quote   # [추가]
 from datetime import datetime, timedelta
 
 import requests
@@ -138,6 +141,51 @@ SAFETY_STEPS = [
      "video": "https://www.youtube.com/embed/stOUne88yR0"},
 ]
 
+
+# [추가] 국내 지진 중대 피해 사례 TOP 5 (피해 큰 순서)
+def commons_img(filename):
+    return f"https://commons.wikimedia.org/wiki/Special:FilePath/{quote(filename)}?width=800"
+
+
+MAJOR_CASES = [
+    {"rank": 1, "name": "2017 포항 지진", "date": "2017년 11월 15일", "intensity": "진도 Ⅵ",
+     "human": "부상 92명 · 이재민 1,797명", "property": "551억 원 (행정안전부 집계)",
+     "desc": "흥해읍 아파트가 기울고 필로티 건물 기둥이 부서지는 등 관측 이래 가장 큰 피해",
+     "image": commons_img("20171118 Pohang Daesung condominium E-1.jpg"),
+     "credit": "사진: Wikimedia Commons"},
+    {"rank": 2, "name": "2016 경주 지진 (9.12 지진)", "date": "2016년 9월 12일", "intensity": "진도 Ⅵ",
+     "human": "부상 23명", "property": "110억 원",
+     "desc": "한옥 기와 낙하·담장 균열 다수, 불국사·첨성대 등 문화재 피해",
+     "image": commons_img("2016 경주 지진 석가탑 CCTV.png"),
+     "credit": "사진: 지진 당시 불국사 석가탑 CCTV (Wikimedia Commons)"},
+    {"rank": 3, "name": "2018 포항 여진", "date": "2018년 2월 11일", "intensity": "진도 Ⅴ",
+     "human": "부상 43명", "property": "시설피해 신고 1,438건",
+     "desc": "포항역 등 354곳 시설 피해, 학교 47곳 벽체 균열·천장 탈락",
+     "image": "", "credit": ""},
+    {"rank": 4, "name": "1978 홍성 지진", "date": "1978년 10월 7일", "intensity": "진도 Ⅴ",
+     "human": "부상 2명", "property": "건물 파손 118동 · 약 2억 원 (당시)",
+     "desc": "건물 1,000여 곳 균열, 홍주읍성 성벽 90m 붕괴",
+     "image": "", "credit": ""},
+    {"rank": 5, "name": "2024 부안 지진", "date": "2024년 6월 12일", "intensity": "진도 Ⅴ",
+     "human": "인명피해 없음", "property": "시설피해 580여 건 (주택 404건)",
+     "desc": "주택 벽 균열·창문 파손, 내소사·개암사 등 국가유산 6건 피해",
+     "image": "", "credit": ""},
+]
+
+
+def img_src(path):
+    """인터넷 주소는 그대로, 내 컴퓨터 파일 경로는 화면에 보이도록 변환"""
+    if not path:
+        return ""
+    if path.startswith("http"):
+        return path
+    if os.path.exists(path):
+        ext = os.path.splitext(path)[1].lower().strip(".") or "jpg"
+        with open(path, "rb") as f:
+            return f"data:image/{ext};base64,{base64.b64encode(f.read()).decode()}"
+    return ""
+
+
 st.markdown("""
 <style>
 html, body, [class*="css"]  { font-size: 18px !important; }
@@ -235,7 +283,7 @@ html, body, [class*="css"]  { font-size: 18px !important; }
 }
 .legend-chip-dark { color:#111; border:1px solid #ccc; }
 
-/* [변경] 통계 카드 : 3칸 높이 동일 + 제목·숫자·설명 줄 위치 가로 정렬 */
+/* 통계 카드 : 3칸 높이 동일 + 제목·숫자·설명 줄 위치 가로 정렬 */
 .stat-card { background:#fafafa; border:1px solid #eee; border-radius: 12px; padding: 24px 16px;
     text-align:center; overflow:hidden;
     min-height: 190px; box-sizing: border-box;
@@ -309,6 +357,21 @@ div.stButton > button:hover { background: #B3123B; color: #fff; }
 div[data-baseweb="select"] * { font-size: 19px !important; }
 
 [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p { font-size: 17px !important; }
+
+/* [추가] 국내 지진 중대 피해 사례 카드 */
+.case-card { border-radius: 12px; overflow:hidden; border:1px solid #0B2545; background:#0B2545; }
+.case-head { background:#B3123B; color:#FFFFFF; padding: 10px 12px; font-size: clamp(17px, 1.2vw, 21px);
+    font-weight: 900; white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+.case-img { width:100%; height: 220px; object-fit: cover; display:block; background:#222; }
+.case-noimg { width:100%; height: 220px; display:flex; align-items:center; justify-content:center;
+    background:#2A2E36; color:#B0B4BC; font-size: 18px; font-weight:700; }
+.case-credit { font-size: 13px; color:#9AA3B5; padding: 4px 12px 0 12px; white-space: nowrap;
+    overflow:hidden; text-overflow: ellipsis; }
+.case-body { padding: 12px 14px 16px 14px; min-height: 300px; box-sizing: border-box; }
+.case-row { font-size: clamp(16px, 1.05vw, 19px); color:#FFFFFF; margin-top: 8px; line-height:1.5; }
+.case-row b { color:#FFD400; }
+.case-desc { font-size: clamp(15px, 1vw, 18px); color:#DDE3EE; margin-top: 12px; line-height:1.55;
+    border-top: 1px solid #23406B; padding-top: 10px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -402,7 +465,7 @@ def fmt_date(date_str):
         return date_str
 
 
-# [변경] 진도 값 표시용 (값 없으면 "-")
+# 진도 값 표시용 (값 없으면 "-")
 def int_text(g):
     return f"진도 {int(g)}" if pd.notna(g) else "-"
 
@@ -542,7 +605,7 @@ else:
     def fmt_item(it):
         t = it["time"]
         t_disp = f"{t[:4]}.{t[4:6]}.{t[6:8]} {t[8:10]}:{t[10:12]}" if len(t) >= 12 else t
-        return f'🔴 {t_disp} · 진도 {clean_paren(it["inT"])} · {it["loc"]}'   # [변경] 규모 → 진도
+        return f'🔴 {t_disp} · 진도 {clean_paren(it["inT"])} · {it["loc"]}'
     ticker_text = "&nbsp;&nbsp;|&nbsp;&nbsp;".join(fmt_item(it) for it in unique_recent)
     duration = max(15, len(ticker_text) // 16)
 
@@ -573,7 +636,6 @@ with map_col:
         placed.append((it["lat"], it["lon"]))
         shift = near * 30   # 겹치는 개수만큼 오른쪽으로 30px씩 이동
 
-        # [변경] 팝업에서 규모 줄 삭제 → 진도만 표기
         popup_html = f"""
         <div style='font-size:16px; line-height:1.6;'>
         <b>{idx}번 · 📍 진원지 :</b> {it['loc']}<br>
@@ -599,7 +661,7 @@ with map_col:
                 ),
             ),
             popup=folium.Popup(popup_html, max_width=300),
-            tooltip=f"{idx}번 · {it['loc']} · 진도 {it['int_disp']}",   # [변경] 규모 → 진도
+            tooltip=f"{idx}번 · {it['loc']} · 진도 {it['int_disp']}",
         ).add_to(m_recent)
 
     with st.container(border=True):
@@ -707,7 +769,6 @@ if not history_df.empty:
     history_kr = history_df.copy()
 
     total_cnt = len(history_kr)
-    # [변경] 역대 최대 규모 → 역대 최대 진도
     int_valid = history_kr.dropna(subset=["intensity"])
     if not int_valid.empty:
         max_row = int_valid.loc[int_valid["intensity"].idxmax()]
@@ -722,7 +783,6 @@ if not history_df.empty:
 
     c1, c2, c3 = st.columns(3)
     with c1:
-        # [변경] 설명 줄 자리 확보(빈 줄) → 3칸 높이·위치 정렬
         st.markdown(f"""<div class="stat-card stat-navy">
         <div class="stat-label">전체 지진 발생 건수</div>
         <div class="stat-num">{total_cnt:,}건</div>
@@ -775,7 +835,6 @@ if not history_df.empty:
 
     st.markdown('<div class="chart-gap"></div>', unsafe_allow_html=True)
 
-    # [변경] 규모별 발생 분포 → 진도별 발생 분포 (가로축 : 진도 단계)
     int_dist = history_df["intensity"].dropna().astype(int).value_counts().sort_index().reset_index()
     int_dist.columns = ["grade", "cnt"]
     int_dist["label"] = int_dist["grade"].apply(lambda g: f"진도 {g}")
@@ -789,6 +848,34 @@ if not history_df.empty:
     fig_mag.update_xaxes(title_text="진도", type="category")
     fig_mag.update_yaxes(title_text="건수")
     st.plotly_chart(fig_mag, use_container_width=True, config=PLOTLY_CONFIG)
+
+    # ---------------- [추가] 국내 지진 중대 피해 사례 ----------------
+    st.markdown('<div class="section-title">🚨 국내 지진 중대 피해 사례</div>', unsafe_allow_html=True)
+    st.markdown('<div class="data-range">역대 피해가 가장 컸던 순서 TOP 5 (인명·재산 피해 기준)</div>', unsafe_allow_html=True)
+
+    case_cols = st.columns(len(MAJOR_CASES))
+    for col, cs in zip(case_cols, MAJOR_CASES):
+        with col:
+            src = img_src(cs["image"])
+            if src:
+                img_html = f'<img class="case-img" src="{src}" alt="{cs["name"]}">'
+                credit_html = f'<div class="case-credit" title="{cs["credit"]}">{cs["credit"]}</div>'
+            else:
+                img_html = '<div class="case-noimg">📷 사진 준비 중</div>'
+                credit_html = ""
+            st.markdown(
+                f'<div class="case-card">'
+                f'<div class="case-head" title="{cs["name"]}">{cs["rank"]}위 · {cs["name"]}</div>'
+                f'{img_html}{credit_html}'
+                f'<div class="case-body">'
+                f'<div class="case-row">📅 <b>날짜</b> {cs["date"]}</div>'
+                f'<div class="case-row">📈 <b>최대 진도</b> {cs["intensity"]}</div>'
+                f'<div class="case-row">🚑 <b>인명</b> {cs["human"]}</div>'
+                f'<div class="case-row">🏚️ <b>재산</b> {cs["property"]}</div>'
+                f'<div class="case-desc">{cs["desc"]}</div>'
+                f'</div></div>',
+                unsafe_allow_html=True
+            )
 
     # ---------------- 지역별 발생 빈도 지도 + 강도(진도) 지도 ----------------
     st.markdown('<div class="section-title">🎯 지역별 지진 발생 빈도 · 강도 지도</div>', unsafe_allow_html=True)
@@ -819,7 +906,6 @@ if not history_df.empty:
             color = BIN_COLORS[label]
             g = row["intensity"]
             g_disp = int(g) if pd.notna(g) else "-"
-            # [변경] 강도(규모) → 진도
             popup_html = f"""
             <div style='font-size:16px; line-height:1.6;'>
             <b>📍 진원지 :</b> {row['loc_text']}<br>
@@ -856,7 +942,6 @@ if not history_df.empty:
             grade = row["intensity"]
             color = intensity_color(grade)
             grade_disp = int(grade) if pd.notna(grade) else "-"
-            # [변경] 강도(규모) 줄 삭제 → 진도만 표기
             popup_html = f"""
             <div style='font-size:16px; line-height:1.6;'>
             <b>📍 진원지 :</b> {row['loc_text']}<br>
@@ -921,7 +1006,6 @@ if not history_df.empty:
         else:
             r_total = len(result_df)
             r_latest = result_df.iloc[0]
-            # [변경] 최대 규모 → 최대 진도
             r_valid = result_df.dropna(subset=["intensity"])
             if not r_valid.empty:
                 r_max = r_valid.loc[r_valid["intensity"].idxmax()]
@@ -932,7 +1016,6 @@ if not history_df.empty:
 
             rc1, rc2, rc3 = st.columns(3)
             with rc1:
-                # [변경] 설명 줄 자리 확보(빈 줄) → 3칸 높이·위치 정렬
                 st.markdown(f"""<div class="stat-card stat-navy">
                 <div class="stat-label">{region_label} 발생 건수</div>
                 <div class="stat-num">{r_total:,}건</div>
@@ -945,7 +1028,6 @@ if not history_df.empty:
                 <div class="stat-sub">{r_max_sub}</div>
                 </div>""", unsafe_allow_html=True)
             with rc3:
-                # [변경] 규모 → 진도
                 st.markdown(f"""<div class="stat-card stat-navy">
                 <div class="stat-label">가장 최근 발생</div>
                 <div class="stat-num">{fmt_date(r_latest['date_str'])}</div>
@@ -954,7 +1036,6 @@ if not history_df.empty:
 
             st.write("")
 
-            # [변경] 규모 열 삭제 → 진도 열만 표시
             table_df = result_df[["date_str", "loc_text", "intensity"]].copy()
             table_df["date_str"] = table_df["date_str"].apply(fmt_date)
             table_df["intensity"] = table_df["intensity"].apply(int_text)
