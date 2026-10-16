@@ -133,34 +133,51 @@ st.markdown("""
 <style>
 html, body, [class*="css"]  { font-size: 18px !important; }
 
-/* [변경] 종합상황실 스타일 전체 창 테두리 (테두리만, 내부 콘텐츠는 그대로) */
+/* [변경] 기존 종합상황실 테두리(.stApp::before / ::after / ops-glow) 삭제 → 모니터 베젤 디자인 */
 .stApp::before {
     content: "";
-    position: fixed; inset: 0;
-    pointer-events: none; z-index: 999999;
-    border: 10px solid #0B2545;
+    position: fixed;
+    top: 28px; left: 28px; right: 28px; bottom: 62px;
+    border-radius: 14px;
+    pointer-events: none;
+    z-index: 999990;
     box-shadow:
-        inset 0 0 0 2px #1E88E5,
-        inset 0 0 28px rgba(30,136,229,0.55);
-    animation: ops-glow 2.4s ease-in-out infinite;
+        0 0 0 3px #000000,
+        0 0 0 6px #2A2E36,
+        0 0 0 400px #15171C,
+        inset 0 0 30px rgba(0,0,0,0.35);
 }
+/* [변경] 하단 베젤 로고 */
 .stApp::after {
-    content: "";
-    position: fixed; inset: 16px;
-    pointer-events: none; z-index: 999999;
-    background:
-        linear-gradient(#00E5FF,#00E5FF) top left     / 46px 4px no-repeat,
-        linear-gradient(#00E5FF,#00E5FF) top left     / 4px 46px no-repeat,
-        linear-gradient(#00E5FF,#00E5FF) top right    / 46px 4px no-repeat,
-        linear-gradient(#00E5FF,#00E5FF) top right    / 4px 46px no-repeat,
-        linear-gradient(#00E5FF,#00E5FF) bottom left  / 46px 4px no-repeat,
-        linear-gradient(#00E5FF,#00E5FF) bottom left  / 4px 46px no-repeat,
-        linear-gradient(#00E5FF,#00E5FF) bottom right / 46px 4px no-repeat,
-        linear-gradient(#00E5FF,#00E5FF) bottom right / 4px 46px no-repeat;
+    content: "DISASTER SITUATION MONITOR";
+    position: fixed;
+    left: 50%; bottom: 22px;
+    transform: translateX(-50%);
+    color: #8A8F98;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    pointer-events: none;
+    z-index: 999991;
 }
-@keyframes ops-glow {
-    0%, 100% { box-shadow: inset 0 0 0 2px #1E88E5, inset 0 0 18px rgba(30,136,229,0.40); }
-    50%      { box-shadow: inset 0 0 0 2px #42A5F5, inset 0 0 34px rgba(66,165,245,0.75); }
+/* [변경] 전원 LED */
+[data-testid="stAppViewContainer"]::after {
+    content: "";
+    position: fixed;
+    right: 56px; bottom: 26px;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: #00E676;
+    box-shadow: 0 0 8px #00E676;
+    pointer-events: none;
+    z-index: 999991;
+}
+/* [변경] 내용이 베젤에 가려지지 않게 안쪽 여백 */
+.block-container {
+    padding-top: 70px !important;
+    padding-left: 70px !important;
+    padding-right: 70px !important;
+    padding-bottom: 110px !important;
 }
 
 .hero-box {
@@ -179,12 +196,20 @@ html, body, [class*="css"]  { font-size: 18px !important; }
     position: relative; background: #0B2545; overflow: hidden;   /* [변경] 배경 네이비 */
     height: 56px; border-radius: 0 0 10px 10px; margin-bottom: 22px;
 }
+/* [변경] 끊김 방지: left 이동 → GPU 가속 transform 이동 */
 .ticker-move {
-    position: absolute; top: 50%; transform: translateY(-50%);
+    display: inline-block;
+    padding-left: 100%;
+    line-height: 56px;
     white-space: nowrap; color: #FFFFFF !important; font-size: 24px; font-weight: 700;   /* [변경] 글자 흰색 */
+    will-change: transform;
+    backface-visibility: hidden;
     animation-name: ticker-scroll; animation-timing-function: linear; animation-iteration-count: infinite;
 }
-@keyframes ticker-scroll { from { left: 100%; } to { left: -140%; } }
+@keyframes ticker-scroll {   /* [변경] */
+    from { transform: translate3d(0, 0, 0); }
+    to   { transform: translate3d(-100%, 0, 0); }
+}
 
 .section-title { font-size: 24px; font-weight: 800; border-left: 6px solid #B3123B;
     padding-left: 12px; margin: 30px 0 14px 0; }
@@ -202,6 +227,12 @@ html, body, [class*="css"]  { font-size: 18px !important; }
 .stat-label { font-size: 20px; font-weight: 800; color:#333; }
 .stat-num { font-size: 40px; font-weight: 900; color:#B3123B; margin-top: 10px; }
 .stat-sub { font-size: 18px; color:#666; margin-top: 8px; }
+
+/* [변경] 전체 이력 요약 통계 카드 3칸: 배경 네이비 / 빨간 글자 → 노랑 / 검정 글자 → 흰색 */
+.stat-card.stat-navy { background:#0B2545; border:1px solid #0B2545; }
+.stat-card.stat-navy .stat-label { color:#FFFFFF; }
+.stat-card.stat-navy .stat-num { color:#FFD400; }
+.stat-card.stat-navy .stat-sub { color:#FFFFFF; }
 
 .level-card { border-radius: 10px 10px 0 0; padding: 18px; text-align:center; color:white;
     font-weight: 800; font-size: 23px; }
@@ -566,22 +597,22 @@ if not history_df.empty:
 
     c1, c2, c3 = st.columns(3)
     with c1:
-        st.markdown(f"""<div class="stat-card">
+        st.markdown(f"""<div class="stat-card stat-navy">
         <div class="stat-label">전체 지진 발생 건수</div>
         <div class="stat-num">{total_cnt:,}건</div>
-        </div>""", unsafe_allow_html=True)
+        </div>""", unsafe_allow_html=True)   # [변경] stat-navy 클래스 추가
     with c2:
-        st.markdown(f"""<div class="stat-card">
+        st.markdown(f"""<div class="stat-card stat-navy">
         <div class="stat-label">역대 최대 규모</div>
         <div class="stat-num">규모 {max_row['mt']}</div>
         <div class="stat-sub">{fmt_date(max_row['date_str'])} · {max_row['loc_text']}</div>
-        </div>""", unsafe_allow_html=True)
+        </div>""", unsafe_allow_html=True)   # [변경] stat-navy 클래스 추가
     with c3:
-        st.markdown(f"""<div class="stat-card">
+        st.markdown(f"""<div class="stat-card stat-navy">
         <div class="stat-label">발생 최다 지역</div>
         <div class="stat-num">{top_city}</div>
         <div class="stat-sub">{top_city_cnt:,}건 · 전체의 {top_city_pct}%</div>
-        </div>""", unsafe_allow_html=True)
+        </div>""", unsafe_allow_html=True)   # [변경] stat-navy 클래스 추가
 
     st.write("")
 
