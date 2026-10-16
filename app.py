@@ -133,7 +133,7 @@ st.markdown("""
 <style>
 html, body, [class*="css"]  { font-size: 18px !important; }
 
-/* [변경] 기존 종합상황실 테두리(.stApp::before / ::after / ops-glow) 삭제 → 모니터 베젤 디자인 */
+/* 모니터 베젤 디자인 */
 .stApp::before {
     content: "";
     position: fixed;
@@ -147,7 +147,7 @@ html, body, [class*="css"]  { font-size: 18px !important; }
         0 0 0 400px #15171C,
         inset 0 0 30px rgba(0,0,0,0.35);
 }
-/* [변경] 하단 베젤 로고 */
+/* 하단 베젤 로고 */
 .stApp::after {
     content: "DISASTER SITUATION MONITOR";
     position: fixed;
@@ -160,7 +160,7 @@ html, body, [class*="css"]  { font-size: 18px !important; }
     pointer-events: none;
     z-index: 999991;
 }
-/* [변경] 전원 LED */
+/* 전원 LED */
 [data-testid="stAppViewContainer"]::after {
     content: "";
     position: fixed;
@@ -172,7 +172,7 @@ html, body, [class*="css"]  { font-size: 18px !important; }
     pointer-events: none;
     z-index: 999991;
 }
-/* [변경] 내용이 베젤에 가려지지 않게 안쪽 여백 */
+/* 내용이 베젤에 가려지지 않게 안쪽 여백 */
 .block-container {
     padding-top: 70px !important;
     padding-left: 70px !important;
@@ -193,20 +193,19 @@ html, body, [class*="css"]  { font-size: 18px !important; }
 }
 
 .ticker-wrap {
-    position: relative; background: #0B2545; overflow: hidden;   /* [변경] 배경 네이비 */
+    position: relative; background: #0B2545; overflow: hidden;
     height: 56px; border-radius: 0 0 10px 10px; margin-bottom: 22px;
 }
-/* [변경] 끊김 방지: left 이동 → GPU 가속 transform 이동 */
 .ticker-move {
     display: inline-block;
     padding-left: 100%;
     line-height: 56px;
-    white-space: nowrap; color: #FFFFFF !important; font-size: 24px; font-weight: 700;   /* [변경] 글자 흰색 */
+    white-space: nowrap; color: #FFFFFF !important; font-size: 24px; font-weight: 700;
     will-change: transform;
     backface-visibility: hidden;
     animation-name: ticker-scroll; animation-timing-function: linear; animation-iteration-count: infinite;
 }
-@keyframes ticker-scroll {   /* [변경] */
+@keyframes ticker-scroll {
     from { transform: translate3d(0, 0, 0); }
     to   { transform: translate3d(-100%, 0, 0); }
 }
@@ -228,7 +227,7 @@ html, body, [class*="css"]  { font-size: 18px !important; }
 .stat-num { font-size: 40px; font-weight: 900; color:#B3123B; margin-top: 10px; }
 .stat-sub { font-size: 18px; color:#666; margin-top: 8px; }
 
-/* [변경] 전체 이력 요약 통계 카드 3칸: 배경 네이비 / 빨간 글자 → 노랑 / 검정 글자 → 흰색 */
+/* 통계 카드: 배경 네이비 / 빨간 글자 → 노랑 / 검정 글자 → 흰색 */
 .stat-card.stat-navy { background:#0B2545; border:1px solid #0B2545; }
 .stat-card.stat-navy .stat-label { color:#FFFFFF; }
 .stat-card.stat-navy .stat-num { color:#FFD400; }
@@ -432,6 +431,56 @@ if not history_df.empty:
 
     history_df = history_df[history_df.apply(_is_south_korea, axis=1)].reset_index(drop=True)
 
+
+# [변경] 최근 발생 5건 : 기상청 실시간(최근) + 생활안전지도 이력을 합쳐 최신순 5건
+def _to_float(v):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+latest_pool = []
+for it in unique_recent:
+    t = it["time"]
+    latest_pool.append({
+        "sort_key": t[:12],
+        "day": t[:8],
+        "disp_time": f"{t[:4]}.{t[4:6]}.{t[6:8]} {t[8:10]}:{t[10:12]}" if len(t) >= 12 else t,
+        "loc": it["loc"],
+        "mt": it["mt"],
+        "int_disp": clean_paren(it["inT"]),
+        "lat": _to_float(it["lat"]),
+        "lon": _to_float(it["lon"]),
+    })
+
+if not history_df.empty:
+    for _, row in history_df.sort_values("date_str", ascending=False).head(20).iterrows():
+        g = row["intensity"]
+        d = str(row["date_str"])
+        latest_pool.append({
+            "sort_key": d[:8] + "0000",
+            "day": d[:8],
+            "disp_time": fmt_date(d),
+            "loc": row["loc_text"],
+            "mt": row["mt"],
+            "int_disp": str(int(g)) if pd.notna(g) else "-",
+            "lat": _to_float(row["lat"]),
+            "lon": _to_float(row["lon"]),
+        })
+
+latest_seen = set()
+latest_dedup = []
+for it in latest_pool:
+    mt_f = _to_float(it["mt"])
+    k = (it["day"], round(mt_f, 1) if mt_f is not None else str(it["mt"]))
+    if k in latest_seen:
+        continue
+    latest_seen.add(k)
+    latest_dedup.append(it)
+
+latest5 = sorted(latest_dedup, key=lambda x: x["sort_key"], reverse=True)[:5]
+
 # ---------------- 상단 배너 + 티커 ----------------
 st.markdown("""
 <div class="hero-box">
@@ -444,14 +493,14 @@ st.markdown('<div class="alert-badge">🔴 최근 3일 이내 발생 알림</div
 
 if not unique_recent:
     ticker_text = "현재 최근 3일 이내 발생한 지진 속보가 없습니다."
-    duration = 13   # [변경] 9 → 13 (조금 느리게)
+    duration = 13
 else:
     def fmt_item(it):
         t = it["time"]
         t_disp = f"{t[:4]}.{t[4:6]}.{t[6:8]} {t[8:10]}:{t[10:12]}" if len(t) >= 12 else t
         return f'🔴 {t_disp} · 규모 {it["mt"]} · {it["loc"]}'
     ticker_text = "&nbsp;&nbsp;|&nbsp;&nbsp;".join(fmt_item(it) for it in unique_recent)
-    duration = max(15, len(ticker_text) // 16)   # [변경] max(10, len//24) → max(15, len//16)
+    duration = max(15, len(ticker_text) // 16)
 
 st.markdown(
     f'<div class="ticker-wrap"><div class="ticker-move" style="animation-duration:{duration}s;">{ticker_text}</div></div>',
@@ -469,50 +518,51 @@ with map_col:
                            doubleClickZoom=False, touchZoom=False)
     fit_bounds_zoomed(m_recent, KOREA_BOUNDS)
 
-    if unique_recent:
-        for it in unique_recent:
-            if it["lat"] is None or it["lon"] is None:
-                continue
-            popup_html = f"""
-            <div style='font-size:15px; line-height:1.6;'>
-            <b>📍 진원지 :</b> {it['loc']}<br>
-            <b>강도(규모) :</b> {it['mt']}<br>
-            <b>진도 :</b> {clean_paren(it['inT'])}
-            </div>
-            """
-            folium.CircleMarker(
-                location=[float(it["lat"]), float(it["lon"])],
-                radius=9, color="#D9534F", fill=True, fill_color="#D9534F", fill_opacity=0.9,
-                popup=folium.Popup(popup_html, max_width=280),
-                tooltip=f"{it['loc']} · 규모 {it['mt']}"
-            ).add_to(m_recent)
+    # [변경] 최근 발생 5건 지도 표기
+    for idx, it in enumerate(latest5, 1):
+        if it["lat"] is None or it["lon"] is None:
+            continue
+        popup_html = f"""
+        <div style='font-size:15px; line-height:1.6;'>
+        <b>{idx}. 📍 진원지 :</b> {it['loc']}<br>
+        <b>강도(규모) :</b> {it['mt']}<br>
+        <b>진도 :</b> {it['int_disp']}<br>
+        <b>발생 :</b> {it['disp_time']}
+        </div>
+        """
+        folium.CircleMarker(
+            location=[it["lat"], it["lon"]],
+            radius=9, color="#D9534F", fill=True, fill_color="#D9534F", fill_opacity=0.9,
+            popup=folium.Popup(popup_html, max_width=280),
+            tooltip=f"{idx}. {it['loc']} · 규모 {it['mt']}"
+        ).add_to(m_recent)
 
     with st.container(border=True):
         st_folium(m_recent, width=None, height=620, use_container_width=True, returned_objects=[])
 
 with info_col:
-    st.markdown(f"""
-    <div class="info-panel">
-        <div class="info-panel-title">📋 최근 3일 이내 발생 현황</div>
-        <div style="font-size:17px; color:#555; margin-bottom:14px;">
-            현재까지 접수된 최근 3일 이내 지진은 총 <b style="color:#B3123B; font-size:21px;">{len(unique_recent)}건</b> 입니다.
-        </div>
-    """, unsafe_allow_html=True)
-
-    if not unique_recent:
-        st.markdown('<div class="info-empty">현재 최근 3일 이내 발생한 지진이 없습니다.<br>평소 대비 요령을 미리 확인해보세요.</div>', unsafe_allow_html=True)
+    # [변경] 최근 3일 → 최근 발생 5건 나열 (목록이 패널 박스 안에 들어가도록 한 번에 출력)
+    if latest5:
+        items_html = "".join(
+            f'<div class="info-item">'
+            f'<div class="info-item-main">{i}. 📍 {it["loc"]}</div>'
+            f'<div class="info-item-sub">규모 {it["mt"]} · 진도 {it["int_disp"]} · {it["disp_time"]}</div>'
+            f'</div>'
+            for i, it in enumerate(latest5, 1)
+        )
     else:
-        for it in unique_recent:
-            t = it["time"]
-            t_disp = f"{t[:4]}.{t[4:6]}.{t[6:8]} {t[8:10]}:{t[10:12]}" if len(t) >= 12 else t
-            st.markdown(f"""
-            <div class="info-item">
-                <div class="info-item-main">📍 {it['loc']}</div>
-                <div class="info-item-sub">규모 {it['mt']} · 진도 {clean_paren(it['inT'])} · {t_disp}</div>
-            </div>
-            """, unsafe_allow_html=True)
+        items_html = '<div class="info-empty">표시할 지진 발생 기록이 없습니다.</div>'
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="info-panel">'
+        f'<div class="info-panel-title">📋 최근 발생 지진 5건</div>'
+        f'<div style="font-size:17px; color:#555; margin-bottom:14px;">'
+        f'가장 최근에 발생한 지진 <b style="color:#B3123B; font-size:21px;">{len(latest5)}건</b>을 최신순으로 보여드립니다.'
+        f'</div>'
+        f'{items_html}'
+        f'</div>',
+        unsafe_allow_html=True
+    )
 
 # ---------------- 진도별 설명 + 영상 ----------------
 st.markdown('<div class="section-title">📺 지진 규모와 진도, 클릭해서 실제 피해 영상을 확인하세요</div>', unsafe_allow_html=True)
@@ -600,19 +650,19 @@ if not history_df.empty:
         st.markdown(f"""<div class="stat-card stat-navy">
         <div class="stat-label">전체 지진 발생 건수</div>
         <div class="stat-num">{total_cnt:,}건</div>
-        </div>""", unsafe_allow_html=True)   # [변경] stat-navy 클래스 추가
+        </div>""", unsafe_allow_html=True)
     with c2:
         st.markdown(f"""<div class="stat-card stat-navy">
         <div class="stat-label">역대 최대 규모</div>
         <div class="stat-num">규모 {max_row['mt']}</div>
         <div class="stat-sub">{fmt_date(max_row['date_str'])} · {max_row['loc_text']}</div>
-        </div>""", unsafe_allow_html=True)   # [변경] stat-navy 클래스 추가
+        </div>""", unsafe_allow_html=True)
     with c3:
         st.markdown(f"""<div class="stat-card stat-navy">
         <div class="stat-label">발생 최다 지역</div>
         <div class="stat-num">{top_city}</div>
         <div class="stat-sub">{top_city_cnt:,}건 · 전체의 {top_city_pct}%</div>
-        </div>""", unsafe_allow_html=True)   # [변경] stat-navy 클래스 추가
+        </div>""", unsafe_allow_html=True)
 
     st.write("")
 
@@ -794,22 +844,22 @@ if not history_df.empty:
 
             rc1, rc2, rc3 = st.columns(3)
             with rc1:
-                st.markdown(f"""<div class="stat-card">
+                st.markdown(f"""<div class="stat-card stat-navy">
                 <div class="stat-label">{region_label} 발생 건수</div>
                 <div class="stat-num">{r_total:,}건</div>
-                </div>""", unsafe_allow_html=True)
+                </div>""", unsafe_allow_html=True)   # [변경] stat-navy 추가
             with rc2:
-                st.markdown(f"""<div class="stat-card">
+                st.markdown(f"""<div class="stat-card stat-navy">
                 <div class="stat-label">최대 규모</div>
                 <div class="stat-num">규모 {r_max['mt']}</div>
                 <div class="stat-sub">{fmt_date(r_max['date_str'])}</div>
-                </div>""", unsafe_allow_html=True)
+                </div>""", unsafe_allow_html=True)   # [변경] stat-navy 추가
             with rc3:
-                st.markdown(f"""<div class="stat-card">
+                st.markdown(f"""<div class="stat-card stat-navy">
                 <div class="stat-label">가장 최근 발생</div>
                 <div class="stat-num">{fmt_date(r_latest['date_str'])}</div>
                 <div class="stat-sub">규모 {r_latest['mt']}</div>
-                </div>""", unsafe_allow_html=True)
+                </div>""", unsafe_allow_html=True)   # [변경] stat-navy 추가
 
             st.write("")
 
