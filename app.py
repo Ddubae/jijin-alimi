@@ -36,7 +36,7 @@ NORTH_KOREA_KEYWORDS = [
     "사리원", "강계", "온성", "무산", "회령", "종성", "경원", "경흥",
 ]
 
-# [변경] 대한민국 영토·영해 지진만 허용하는 필터
+# 대한민국 영토·영해 지진만 허용하는 필터
 DOMESTIC_FCTP = {"3", "5", "11", "13", "14"}   # 2·12(국외 통보) 제외
 KR_SEA_BOUNDS = {"lat_min": 32.0, "lat_max": 38.7, "lon_min": 124.0, "lon_max": 132.0}
 FOREIGN_KEYWORDS = ["일본", "중국", "대만", "러시아", "필리핀", "인도네시아",
@@ -132,6 +132,37 @@ SAFETY_STEPS = [
 st.markdown("""
 <style>
 html, body, [class*="css"]  { font-size: 18px !important; }
+
+/* [변경] 종합상황실 스타일 전체 창 테두리 (테두리만, 내부 콘텐츠는 그대로) */
+.stApp::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 999999;
+    border: 10px solid #0B2545;
+    box-shadow:
+        inset 0 0 0 2px #1E88E5,
+        inset 0 0 28px rgba(30,136,229,0.55);
+    animation: ops-glow 2.4s ease-in-out infinite;
+}
+.stApp::after {
+    content: "";
+    position: fixed; inset: 16px;
+    pointer-events: none; z-index: 999999;
+    background:
+        linear-gradient(#00E5FF,#00E5FF) top left     / 46px 4px no-repeat,
+        linear-gradient(#00E5FF,#00E5FF) top left     / 4px 46px no-repeat,
+        linear-gradient(#00E5FF,#00E5FF) top right    / 46px 4px no-repeat,
+        linear-gradient(#00E5FF,#00E5FF) top right    / 4px 46px no-repeat,
+        linear-gradient(#00E5FF,#00E5FF) bottom left  / 46px 4px no-repeat,
+        linear-gradient(#00E5FF,#00E5FF) bottom left  / 4px 46px no-repeat,
+        linear-gradient(#00E5FF,#00E5FF) bottom right / 46px 4px no-repeat,
+        linear-gradient(#00E5FF,#00E5FF) bottom right / 4px 46px no-repeat;
+}
+@keyframes ops-glow {
+    0%, 100% { box-shadow: inset 0 0 0 2px #1E88E5, inset 0 0 18px rgba(30,136,229,0.40); }
+    50%      { box-shadow: inset 0 0 0 2px #42A5F5, inset 0 0 34px rgba(66,165,245,0.75); }
+}
+
 .hero-box {
     background: linear-gradient(90deg,#1a1a2e,#8B0000);
     padding: 22px 28px; border-radius: 10px; color: white; margin-bottom: 6px;
@@ -145,12 +176,12 @@ html, body, [class*="css"]  { font-size: 18px !important; }
 }
 
 .ticker-wrap {
-    position: relative; background: #7a0f24; overflow: hidden;
+    position: relative; background: #0B2545; overflow: hidden;   /* [변경] 배경 네이비 */
     height: 56px; border-radius: 0 0 10px 10px; margin-bottom: 22px;
 }
 .ticker-move {
     position: absolute; top: 50%; transform: translateY(-50%);
-    white-space: nowrap; color: #fff; font-size: 24px; font-weight: 700;
+    white-space: nowrap; color: #FFFFFF !important; font-size: 24px; font-weight: 700;   /* [변경] 글자 흰색 */
     animation-name: ticker-scroll; animation-timing-function: linear; animation-iteration-count: infinite;
 }
 @keyframes ticker-scroll { from { left: 100%; } to { left: -140%; } }
@@ -332,13 +363,13 @@ if not recent_df.empty:
             "lat": row.get("lat"),
             "lon": row.get("lon"),
             "inT": row.get("inT", "-"),
-            "fcTp": row.get("fcTp", ""),   # [변경]
+            "fcTp": row.get("fcTp", ""),
         })
 
 seen = set()
 unique_recent = []
 for item in recent_list:
-    if not is_korea_domestic(item):   # [변경] 국내(영토·영해)만 통과
+    if not is_korea_domestic(item):
         continue
     key = (item["time"], item["loc"], item["mt"])
     if key not in seen:
@@ -382,14 +413,14 @@ st.markdown('<div class="alert-badge">🔴 최근 3일 이내 발생 알림</div
 
 if not unique_recent:
     ticker_text = "현재 최근 3일 이내 발생한 지진 속보가 없습니다."
-    duration = 9   # [변경] 18 → 9 (2배 빠르게)
+    duration = 13   # [변경] 9 → 13 (조금 느리게)
 else:
     def fmt_item(it):
         t = it["time"]
         t_disp = f"{t[:4]}.{t[4:6]}.{t[6:8]} {t[8:10]}:{t[10:12]}" if len(t) >= 12 else t
         return f'🔴 {t_disp} · 규모 {it["mt"]} · {it["loc"]}'
     ticker_text = "&nbsp;&nbsp;|&nbsp;&nbsp;".join(fmt_item(it) for it in unique_recent)
-    duration = max(10, len(ticker_text) // 24)   # [변경] 기존 max(20, len//12) → 2배 빠르게
+    duration = max(15, len(ticker_text) // 16)   # [변경] max(10, len//24) → max(15, len//16)
 
 st.markdown(
     f'<div class="ticker-wrap"><div class="ticker-move" style="animation-duration:{duration}s;">{ticker_text}</div></div>',
